@@ -1,10 +1,10 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 export default async function EditProductPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+  const { id } = await params;
 
-  // 🔜 Abhi dummy product data use kar rahe hain
+  // Dummy product (normally yeh DB se aayega)
   const product = {
     id,
     title: "Dummy Title",
@@ -13,6 +13,7 @@ export default async function EditProductPage({ params }: { params: { id: string
     imageUrl: "https://res.cloudinary.com/dmn5oyuzx/image/upload/v1753210169/products/zipz2rppfqvhiorgofzs.jpg",
   };
 
+  // Yeh check filhal zarurat nahi, because dummy hamesha exist karega
   if (!product) return notFound();
 
   return (

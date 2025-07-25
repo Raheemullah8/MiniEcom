@@ -1,63 +1,153 @@
-"use client"
+// app/add-product/page.tsx
+"use client";
 
-import { useActionState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { uploadImageService } from "@/service/imageService";
+import { createProduct } from "@/service/productService";
+ 
+interface FormData {
+  title: string;
+  price: number;
+  description: string;
+  image: FileList;
+}
 
 export default function AddProductForm() {
-  async function addProduct(prevState: unknown, formData: FormData) {
-    const title = formData.get("title")
-    const price = formData.get("price")
-    const description = formData.get("description")
-    const image = formData.get("image")
+  const [message, setMessage] = useState("");
+  const [success, setSuccess] = useState(false);
+  // Removed: const [isSubmitting, setIsSubmitting] = useState(false);
 
-    console.log({
-      title,
-      price,
-      description,
-      image,
-    })
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting }, // <-- isSubmitting ko yahan se extract kiya
+    reset,
+  } = useForm<FormData>();
 
-    return { message: "Product data logged to console." }
-  }
+  const onSubmit = async (data: FormData) => {
+    // Removed: setIsSubmitting(true); // isSubmitting ab React Hook Form handle kar raha hai
+    setMessage("");
+    setSuccess(false);
 
-  const [state, formAction, isPending] = useActionState(addProduct, { message: "" })
+    const imageFile = data.image?.[0];
+
+    // --- Client-Side Validation (Basic) ---
+    if (!imageFile) {
+      setMessage("Please select an image file.");
+      // No need to set isSubmitting to false here, as it will be false
+      // until handleSubmit's callback completes.
+      return;
+    }
+
+    let imageUrl: string = "";
+
+    // --- Step 1: Upload Image via Service ---
+    try {
+      setMessage("Uploading image...");
+      imageUrl = await uploadImageService(imageFile);
+      setMessage("Image uploaded successfully, now creating product...");
+    } catch (imageUploadError: any) {
+      console.error("Image upload failed:", imageUploadError);
+      setMessage(imageUploadError.message || "Failed to upload image.");
+      setSuccess(false);
+      // Removed: setIsSubmitting(false); // React Hook Form handles this
+      return; // Stop execution on error
+    }
+
+    // --- Step 2: Create Product with the received Image URL via Product Service ---
+    try {
+      const responseData = await createProduct({
+        title: data.title,
+        price: Number(data.price),
+        description: data.description,
+        imageUrl: imageUrl, // Send the URL obtained from image upload
+      });
+
+      setMessage(responseData.message || "Product created successfully!");
+      setSuccess(true);
+      reset(); // Form ko reset kar diya
+    } catch (productCreateError: any) {
+      console.error("Product creation failed:", productCreateError);
+      setMessage(productCreateError.message || "Failed to add product. Please check console.");
+      setSuccess(false);
+    } finally {
+      // Removed: setIsSubmitting(false); // React Hook Form handles this automatically when onSubmit finishes
+    }
+  };
 
   return (
-    <form action={formAction} className="space-y-6 p-6 bg-white dark:bg-zinc-900 rounded-xl shadow-md max-w-xl mx-auto">
-      <h2 className="text-2xl font-bold">Add Product</h2>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6 p-6 bg-white dark:bg-zinc-900 rounded-xl shadow-md max-w-xl mx-auto mt-10"
+    >
+      <h2 className="text-2xl font-bold text-center">Add New Product (Two-Step API)</h2>
 
       {/* Title */}
       <div className="space-y-2">
         <Label htmlFor="title">Title</Label>
-        <Input id="title" name="title" placeholder="Product title" />
+        <Input
+          id="title"
+          type="text"
+          placeholder="Product title"
+          {...register("title", { required: "Title is required." })}
+        />
+        {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
       </div>
 
       {/* Price */}
       <div className="space-y-2">
         <Label htmlFor="price">Price</Label>
-        <Input id="price" name="price" type="number" placeholder="Price" />
+        <Input
+          id="price"
+          type="number"
+          step="0.01"
+          placeholder="Price"
+          {...register("price", {
+            required: "Price is required.",
+            valueAsNumber: true, // Automatically converts to number
+          })}
+        />
+        {errors.price && <p className="text-red-500 text-sm">{errors.price.message}</p>}
       </div>
 
       {/* Description */}
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
-        <Textarea id="description" name="description" placeholder="Description..." />
+        <Textarea
+          id="description"
+          placeholder="Description..."
+          {...register("description", { required: "Description is required." })}
+        />
+        {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
       </div>
 
       {/* Image File Upload */}
       <div className="space-y-2">
         <Label htmlFor="image">Image Upload</Label>
-        <Input id="image" name="image" type="file" accept="image/*" />
+        <Input
+          id="image"
+          type="file"
+          accept="image/*"
+          {...register("image", { required: "An image file is required." })}
+        />
+        {errors.image && <p className="text-red-500 text-sm">{errors.image.message}</p>}
       </div>
 
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? "Adding..." : "Add Product"}
+      <Button type="submit" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? "Adding Product..." : "Add Product"}
       </Button>
 
-      {state.message && <p className="text-green-600 mt-4">{state.message}</p>}
+      {/* Display Messages */}
+      {message && (
+        <p className={`mt-4 ${success ? "text-green-600" : "text-red-500"}`}>
+          {message}
+        </p>
+      )}
     </form>
-  )
+  );
 }
