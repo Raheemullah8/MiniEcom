@@ -2,13 +2,6 @@
 
 import axios from 'axios';
 
-/**
- * Image upload karne ke liye API call.
- * Yeh function FormData accept karta hai aur /api/upload-image route ko hit karta hai.
- * @param imageFile The File object to be uploaded.
- * @returns Uploaded image ka URL.
- * @throws Error agar API call fail hoti hai.
- */
 export async function uploadImageService(imageFile: File): Promise<string> {
   const formData = new FormData();
   formData.append("image", imageFile);
