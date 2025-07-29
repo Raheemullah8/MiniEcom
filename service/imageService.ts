@@ -1,5 +1,4 @@
 // services/imageService.ts
-
 import axios from 'axios';
 
 export async function uploadImageService(imageFile: File): Promise<string> {
@@ -8,12 +7,11 @@ export async function uploadImageService(imageFile: File): Promise<string> {
 
   try {
     const response = await axios.post<{ message: string; imageUrl: string }>(
-      "/api/upload-image",
+      "/api/upload-image", // Ensure this endpoint is correct on your backend
       formData,
       {
         headers: {
           // Axios automatically sets 'Content-Type': 'multipart/form-data' for FormData
-          // 'Content-Type': 'multipart/form-data' // You can explicitly set it, but Axios usually handles it
         },
       }
     );
