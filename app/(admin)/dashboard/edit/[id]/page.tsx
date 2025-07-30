@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import Image from "next/image";
 
 export default async function EditProductPage({ params }: { params: { id: string } }) {
-  const { id } = await params;
+  const { id } = params;
 
-  // Dummy product (normally yeh DB se aayega)
+  // Dummy product (normally DB se aayega)
   const product = {
     id,
     title: "Dummy Title",
@@ -13,40 +19,53 @@ export default async function EditProductPage({ params }: { params: { id: string
     imageUrl: "https://res.cloudinary.com/dmn5oyuzx/image/upload/v1753210169/products/zipz2rppfqvhiorgofzs.jpg",
   };
 
-  // Yeh check filhal zarurat nahi, because dummy hamesha exist karega
   if (!product) return notFound();
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="p-6 max-w-2xl mx-auto space-y-6">
       {/* 🔙 Back to Dashboard Button */}
-      <div className="mb-4">
+      <div>
         <Link href="/dashboard">
-          <button className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</button>
+          <Button variant="link" className="p-0 text-sm">&larr; Back to Dashboard</Button>
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold mb-4">Edit Product - {product.title}</h1>
+      <h1 className="text-2xl font-bold">Edit Product - {product.title}</h1>
 
-      <form className="space-y-4 bg-white dark:bg-zinc-900 rounded-lg p-6 shadow">
-        <div>
-          <label className="block text-sm font-medium">Title</label>
-          <input type="text" defaultValue={product.title} className="w-full p-2 rounded border" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Price</label>
-          <input type="number" defaultValue={product.price} className="w-full p-2 rounded border" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Description</label>
-          <textarea defaultValue={product.desc} className="w-full p-2 rounded border" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Image</label>
-          <img src={product.imageUrl} alt={product.title} className="w-40 h-40 object-cover rounded mb-2" />
-          <input type="file" accept="image/*" className="w-full" />
-        </div>
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
-      </form>
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <form className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" defaultValue={product.title} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Price</Label>
+              <Input id="price" type="number" defaultValue={product.price} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="desc">Description</Label>
+              <Textarea id="desc" defaultValue={product.desc} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Image</Label>
+              <Image
+                src={product.imageUrl}
+                alt={product.title}
+                width={160}
+                height={160}
+                className="w-40 h-40 object-cover rounded-md border"
+              />
+              <Input id="image" type="file" accept="image/*" />
+            </div>
+
+            <Button type="submit" className="w-full">Update</Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
