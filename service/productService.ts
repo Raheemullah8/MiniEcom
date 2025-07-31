@@ -1,39 +1,38 @@
-// service/productService.ts
 import axiosInstance from "@/lib/axiosInstance";
 
-interface ProductPayload {
-  title: string;
-  price: number;
-  description: string;
-  imageUrl: string;
-}
-
-// Product data type jo API se wapas aayegi
 interface IProduct {
-  // <--- Ye aapka actual product structure hai
   id: number;
   title: string;
   price: number;
   description: string;
   imageUrl: string;
-  createdAt: string; // Agar API se aa raha hai
+  createdAt: string;
 }
 
-// ProductResponse jo API se aati hai jab single product banate hain
-interface CreateProductResponse {
-  message: string;
-  data: IProduct; // <--- single IProduct object
-}
-
-// Response type for successful delete operation
 interface DeleteProductResponse {
   message: string;
+}
+
+interface ProductPayload {
+  title: string;
+  price: number;
+  description: string;
+  imageBase64: string;
+}
+
+interface CreateProductResponse {
+  message: string;
+  data: IProduct;
+}
+
+interface UpdateProductResponse {
+  message: string;
+  data: IProduct;
 }
 
 export async function createProduct(
   payload: ProductPayload
 ): Promise<CreateProductResponse> {
-  // Changed to CreateProductResponse
   try {
     const response = await axiosInstance.post<CreateProductResponse>(
       "/api/products",
@@ -41,24 +40,19 @@ export async function createProduct(
     );
     return response.data;
   } catch (error: unknown) {
-    console.error(
-      "An unexpected error occurred during product creation:",
-      error
-    );
-    throw new Error("An unexpected error occurred.");
+    console.error("Error creating product:", error);
+    throw new Error("Product creation failed.");
   }
 }
-
 
 export const getProducts = async (): Promise<IProduct[]> => {
   console.log("Fetching products from API...");
   try {
-    
     const response = await axiosInstance.get<{
       message: string;
       data: IProduct[];
     }>("/api/products");
-    return response.data.data; // <--- Yahan data.data ko return karein
+    return response.data.data;
   } catch (error: unknown) {
     console.error(
       "An unexpected error occurred while fetching products:",
@@ -79,5 +73,31 @@ export async function deleteProduct(
   } catch (error: unknown) {
     console.error(`Error deleting product with ID ${id}:`, error);
     throw new Error(`Failed to delete product with ID ${id}.`);
+  }
+}
+
+export async function singleProduct(id: number): Promise<IProduct> {
+  try {
+    const response = await axiosInstance.get(`/api/products/singleproducts/${id}`);
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error fetching single product with ID ${id}:`, error);
+    throw new Error(`Failed to fetch product with ID ${id}.`);
+  }
+}
+
+export async function updateProduct(
+  id: number,
+  payload: ProductPayload
+): Promise<UpdateProductResponse> {
+  try {
+    const response = await axiosInstance.patch<UpdateProductResponse>(
+      `/api/products/update/${id}`,
+      payload
+    );
+    return response.data;
+  } catch (error: unknown) {
+    console.error(`Error updating product with ID ${id}:`, error);
+    throw new Error(`Failed to update product with ID ${id}.`);
   }
 }

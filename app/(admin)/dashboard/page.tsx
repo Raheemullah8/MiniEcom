@@ -15,8 +15,9 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import Loading from "./loading";
 import NotFound from "@/app/not-found";
+import { deleteProduct, getProducts } from "@/service/productService";
 // getProducts aur deleteProduct dono ko import karein
-import { getProducts, deleteProduct } from "@/service/productService";
+
 
 interface IProduct {
   id: number;
@@ -140,7 +141,7 @@ export default function DashboardPage() {
               </CardContent>
               <CardFooter>
                 <div className="flex w-full justify-between">
-                  <Link href={`/dashboard/edit/${product.id}`}>
+                  <Link href={`/dashboard/edit/${product?.id}`}>
                     <Button className="bg-blue-600 text-white">Edit</Button>
                   </Link>
                   <Button
