@@ -1,50 +1,55 @@
-"use client"; // Required for hooks
+"use client";
 
-import { use, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import Image from "next/image";
-import { singleProduct, updateProduct } from "@/service/productService";
-import { fileToBase64 } from "@/lib/fileUtils";
+import { ArrowLeft } from "lucide-react";
+import { singleProduct, updateProduct } from '@/service/productService';
+import { fileToBase64 } from '@/lib/fileUtils';
 
-
-type ProductFormData = {
+interface Product {
+  id: number;
   title: string;
   price: number;
   description: string;
-  imageFile?: File;
-};
+  imageUrl: string;
+}
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
   const { id } = params;
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imagePreview, setImagePreview] = useState('');
 
   const {
     register,
     handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<ProductFormData>();
+    reset,
+    formState: { errors, isSubmitting }
+  } = useForm<Product>();
 
-  // Fetch product data on component mount
   useEffect(() => {
     const fetchProduct = async () => {
       try {
+        setIsLoading(true);
         const data = await singleProduct(Number(id));
-        setProduct(data);
-        setValue("title", data.title);
-        setValue("price", data.price);
-        setValue("description", data.description);
-        setPreviewImage(data.imageUrl);
+        if (data) {
+          setProduct(data);
+          setImagePreview(data.imageUrl);
+          reset({
+            title: data.title,
+            price: data.price,
+            description: data.description
+          });
+        }
       } catch (error) {
         console.error("Error fetching product:", error);
       } finally {
@@ -53,105 +58,93 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     };
 
     fetchProduct();
-  }, [id, setValue]);
+  }, [id, reset]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setValue("imageFile", file);
-      const preview = URL.createObjectURL(file);
-      setPreviewImage(preview);
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
     }
   };
 
-  const onSubmit = async (data: ProductFormData) => {
-    setIsSubmitting(true);
+  const onSubmit = async (data: Product) => {
     try {
-      let imageBase64 = product.imageUrl; // Default to existing image
-
-      // Convert new image to base64 if uploaded
-      if (data.imageFile) {
-        imageBase64 = await fileToBase64(data.imageFile);
+      let imageBase64 = product?.imageUrl || '';
+      
+      const fileInput = document.getElementById('image') as HTMLInputElement;
+      if (fileInput?.files?.[0]) {
+        imageBase64 = await fileToBase64(fileInput.files[0]);
       }
 
       const payload = {
         title: data.title,
-        price: data.price,
+        price: Number(data.price),
         description: data.description,
-        imageBase64,
+        imageBase64
       };
 
       await updateProduct(Number(id), payload);
-      alert("Product updated successfully!");
-      // Optionally redirect or refresh data
+      router.push('/dashboard');
+      router.refresh();
     } catch (error) {
-      console.error("Error updating product:", error);
-      alert("Failed to update product");
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error updating product:', error);
+      alert('Failed to update product. Please try again.');
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
-  if (!product) return notFound();
+  if (isLoading) return <div className="text-center p-8">Loading...</div>;
+  if (!product) return <div className="text-center p-8 text-red-500">Product not found</div>;
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
-      <div>
+    <div className="container mx-auto p-4 max-w-2xl">
+      <div className="mb-4">
         <Link href="/dashboard">
-          <Button variant="link" className="p-0 text-sm">&larr; Back to Dashboard</Button>
+          <Button variant="ghost">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold">Edit Product - {product.title}</h1>
-
       <Card>
-        <CardContent className="p-6 space-y-4">
+        <CardHeader>
+          <CardTitle>Edit Product - {product.title}</CardTitle>
+        </CardHeader>
+        
+        <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
+              <Label>Title</Label>
               <Input
-                id="title"
                 {...register("title", { required: "Title is required" })}
               />
               {errors.title && <p className="text-sm text-red-500">{errors.title.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="price">Price</Label>
+              <Label>Price (Rs.)</Label>
               <Input
-                id="price"
                 type="number"
-                {...register("price", {
+                {...register("price", { 
                   required: "Price is required",
-                  valueAsNumber: true,
+                  min: { value: 0, message: "Price must be positive" }
                 })}
               />
               {errors.price && <p className="text-sm text-red-500">{errors.price.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label>Description</Label>
               <Textarea
-                id="description"
                 {...register("description", { required: "Description is required" })}
+                rows={4}
               />
-              {errors.description && (
-                <p className="text-sm text-red-500">{errors.description.message}</p>
-              )}
+              {errors.description && <p className="text-sm text-red-500">{errors.description.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label>Image</Label>
-              {previewImage && (
-                <Image
-                  src={previewImage}
-                  alt={product.title}
-                  width={160}
-                  height={160}
-                  className="w-40 h-40 object-cover rounded-md border mb-2"
-                />
-              )}
+              <Label>Product Image</Label>
               <Input
                 id="image"
                 type="file"
@@ -160,9 +153,33 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Updating..." : "Update Product"}
-            </Button>
+            <div className="relative w-full h-64 border rounded-lg overflow-hidden">
+              <Image
+                src={imagePreview}
+                alt="Product image"
+                fill
+                className="object-cover"
+              />
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push('/dashboard')}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

@@ -46,7 +46,6 @@ export async function createProduct(
 }
 
 export const getProducts = async (): Promise<IProduct[]> => {
-  console.log("Fetching products from API...");
   try {
     const response = await axiosInstance.get<{
       message: string;
@@ -54,10 +53,7 @@ export const getProducts = async (): Promise<IProduct[]> => {
     }>("/api/products");
     return response.data.data;
   } catch (error: unknown) {
-    console.error(
-      "An unexpected error occurred while fetching products:",
-      error
-    );
+    console.error("Error fetching products:", error);
     throw new Error("Failed to load products.");
   }
 };
@@ -79,9 +75,9 @@ export async function deleteProduct(
 export async function singleProduct(id: number): Promise<IProduct> {
   try {
     const response = await axiosInstance.get(`/api/products/singleproducts/${id}`);
-    return response.data.data;
+    return response.data.data || response.data;
   } catch (error) {
-    console.error(`Error fetching single product with ID ${id}:`, error);
+    console.error(`Error fetching product with ID ${id}:`, error);
     throw new Error(`Failed to fetch product with ID ${id}.`);
   }
 }
