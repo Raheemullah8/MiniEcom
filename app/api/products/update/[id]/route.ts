@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { uploadImage } from "@/lib/cloudinary";
 
 export async function PATCH(
   req: NextRequest,
@@ -17,7 +18,7 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { title, price, description, imageUrl } = body;
+    const { title, price, description, imageBase64 } = body;
 
     if (!title || !price || !description) {
       return NextResponse.json(
@@ -25,6 +26,7 @@ export async function PATCH(
         { status: 400 }
       );
     }
+    const imageUrl = await uploadImage(imageBase64)
 
     const product = await prisma.product.update({
       where: { id: numericId },
@@ -32,7 +34,7 @@ export async function PATCH(
         title,
         price,
         description,
-        imageUrl: imageUrl || undefined,
+       imageUrl
       },
     });
 
