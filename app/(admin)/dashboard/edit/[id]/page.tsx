@@ -1,20 +1,24 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
+import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
-import { singleProduct, updateProduct } from '@/service/productService';
-import { fileToBase64 } from '@/lib/fileUtils';
+import React, { use, useEffect, useState } from "react";
+import { singleProduct, updateProduct } from "@/service/productService";
+import { useForm } from "react-hook-form";
+import { fileToBase64 } from "@/lib/fileUtils";
+import { toast } from "sonner"
 
-interface Product {
+import Loading from "../../loading";
+import NotFound from "@/app/not-found";
+import { useRouter } from "next/navigation";
+
+interface Products {
   id: number;
   title: string;
   price: number;
@@ -22,57 +26,68 @@ interface Product {
   imageUrl: string;
 }
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default function EditProductPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const { id } = use(params);
+  const [product, setProduct] = useState<Products | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<string>("");
   const router = useRouter();
-  const { id } = params;
-  const [product, setProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [imagePreview, setImagePreview] = useState('');
-
+  
   const {
     register,
     handleSubmit,
+    formState: { errors, isSubmitting },
     reset,
-    formState: { errors, isSubmitting }
-  } = useForm<Product>();
+  } = useForm<Products>();
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchData = async () => {
       try {
-        setIsLoading(true);
+        setLoading(true);
         const data = await singleProduct(Number(id));
         if (data) {
           setProduct(data);
-          setImagePreview(data.imageUrl);
+          setPreview(data.imageUrl);
           reset({
             title: data.title,
+            description: data.description,
             price: data.price,
-            description: data.description
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error fetching product:", error);
+        // Optional: Show error toast
+        // toast.error("Failed to load product");
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-
-    fetchProduct();
+    
+    if (id) {
+      fetchData();
+    }
   }, [id, reset]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const onSubmit = async (data: Product) => {
+  const onSubmit = async (data: Products) => {
     try {
-      let imageBase64 = product?.imageUrl || '';
-      
+      let imageBase64 = product?.imageUrl || "";
       const fileInput = document.getElementById('image') as HTMLInputElement;
+
       if (fileInput?.files?.[0]) {
         imageBase64 = await fileToBase64(fileInput.files[0]);
       }
@@ -83,18 +98,31 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         description: data.description,
         imageBase64
       };
-
+      
       await updateProduct(Number(id), payload);
-      router.push('/dashboard');
+      
+      // Optional: Show success toast
+      // toast.success("Product updated successfully!");
+      toast.success("Product Update Successfully!")
+      router.push("/dashboard");
       router.refresh();
+      
     } catch (error) {
       console.error('Error updating product:', error);
+      // Optional: Better error handling
+      // toast.error("Failed to update product. Please try again.");
       alert('Failed to update product. Please try again.');
     }
   };
 
-  if (isLoading) return <div className="text-center p-8">Loading...</div>;
-  if (!product) return <div className="text-center p-8 text-red-500">Product not found</div>;
+  const handleCancel = () => {
+    router.push("/dashboard");
+  };
+
+
+
+  if (loading) return <Loading />;
+  if (!product) return <NotFound />;
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -109,75 +137,94 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
       <Card>
         <CardHeader>
-          <CardTitle>Edit Product - {product.title}</CardTitle>
+          <CardTitle>Edit Product</CardTitle>
         </CardHeader>
-        
+
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label>Title</Label>
-              <Input
-                {...register("title", { required: "Title is required" })}
+              <Label htmlFor="title">Title</Label>
+              <Input 
+                id="title"
+                {...register("title", { 
+                  required: "Title is required",
+                  minLength: { value: 3, message: "Title must be at least 3 characters" }
+                })} 
               />
-              {errors.title && <p className="text-sm text-red-500">{errors.title.message}</p>}
+              {errors.title && (
+                <p className="text-sm text-red-500">{errors.title.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label>Price (Rs.)</Label>
-              <Input
+              <Label htmlFor="price">Price (Rs.)</Label>
+              <Input 
+                id="price"
                 type="number"
                 {...register("price", { 
                   required: "Price is required",
-                  min: { value: 0, message: "Price must be positive" }
-                })}
+                  min: { value: 1, message: "Price must be greater than 0" },
+                  max: { value: 10000000, message: "Price is too high" }
+                })} 
               />
-              {errors.price && <p className="text-sm text-red-500">{errors.price.message}</p>}
+              {errors.price && (
+                <p className="text-sm text-red-500">{errors.price.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                {...register("description", { required: "Description is required" })}
-                rows={4}
+              <Label htmlFor="description">Description</Label>
+              <Textarea 
+                id="description"
+                rows={4} 
+                {...register("description", { 
+                  required: "Description is required",
+                  minLength: { value: 10, message: "Description must be at least 10 characters" }
+                })} 
               />
-              {errors.description && <p className="text-sm text-red-500">{errors.description.message}</p>}
+              {errors.description && (
+                <p className="text-sm text-red-500">{errors.description.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label>Product Image</Label>
-              <Input
-                id="image"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
+              <Label htmlFor="image">Product Image</Label>
+              <Input 
+                id="image" 
+                type="file" 
+                accept="image/*" 
+                onChange={handleImageChange} 
               />
             </div>
 
-            <div className="relative w-full h-64 border rounded-lg overflow-hidden">
-              <Image
-                src={imagePreview}
-                alt="Product image"
-                fill
-                className="object-cover"
-              />
-            </div>
+            {preview && (
+              <div className="relative w-full h-64 border rounded-lg overflow-hidden">
+                <Image
+                  src={preview}
+                  alt="Product preview"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
 
             <div className="flex gap-4 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push('/dashboard')}
+              <Button 
+                type="button" 
+                variant="outline" 
                 className="flex-1"
+                onClick={handleCancel}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              
-              <Button
-                type="submit"
-                className="flex-1"
+
+              <Button 
+                type="submit" 
+                className="flex-1" 
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? "Updating..." : "Update Product"}
               </Button>
             </div>
           </form>

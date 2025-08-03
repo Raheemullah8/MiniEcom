@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createProduct } from "@/service/productService";
 import { fileToBase64 } from "@/lib/fileUtils";
-
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface FormData {
   title: string;
@@ -20,6 +21,7 @@ interface FormData {
 export default function AddProductForm() {
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const router = useRouter()
 
   const {
     register,
@@ -48,6 +50,9 @@ export default function AddProductForm() {
       };
       
       const res = await createProduct(payload);
+      toast.success("Product Add Successfull!")
+      router.push("/dashboard")
+
       setSuccess(true);
       setMessage(res.message);
       reset();
