@@ -1,8 +1,9 @@
 "use client";
 import React from "react";
 import Link from "next/link";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeProvider } from "@/components/theme-provider";
 import {
   DropdownMenu,
@@ -11,19 +12,35 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu } from "lucide-react"; // hamburger icon
+import { Menu } from "lucide-react";
+import { UserButton } from "@clerk/nextjs";
 
-const user = {
-  name: "Admin",
-  email: "admin@example.com",
-  image: "",
-};
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "raheem2112a@aptechsite.net";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
+  const router = useRouter();
+
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
+
+  if (!isSignedIn) {
+    router.push("/");
+    return null;
+  }
+
+  // Check if the logged-in user has the admin email
+  if (user?.emailAddresses?.[0]?.emailAddress !== ADMIN_EMAIL) {
+    router.push("/");
+    return null;
+  }
+
   return (
     <ThemeProvider attribute="class" defaultTheme="dark">
       <div className="flex min-h-screen">
-        {/* Mobile Header with Menu Button */}
+        {/* Mobile Header */}
         <div className="md:hidden fixed top-0 left-0 w-full z-50 bg-background border-b border-muted flex items-center justify-between px-4 py-2">
           <Sheet>
             <SheetTrigger>
@@ -34,9 +51,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </SheetContent>
           </Sheet>
           <div className="text-lg font-semibold">Admin Panel</div>
+          <div className="ml-auto mr-4">
+            <UserButton afterSignOutUrl="/" />
+          </div>
         </div>
 
-        {/* Sidebar for Desktop */}
+        {/* Desktop Sidebar */}
         <aside className="hidden md:block w-64 bg-background text-foreground border-r border-muted p-5 shadow-sm">
           <SidebarContent />
         </aside>
@@ -57,25 +77,20 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="cursor-pointer flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src={user?.image} />
-                <AvatarFallback>AD</AvatarFallback>
-              </Avatar>
+              <UserButton 
+                appearance={{
+                  elements: {
+                    avatarBox: "h-10 w-10",
+                    userButtonAvatarBox: "h-full w-full"
+                  }
+                }}
+              />
               {!isMobile && <div className="text-lg font-semibold">Admin Panel</div>}
             </div>
           </DropdownMenuTrigger>
-
           <DropdownMenuContent className="w-56 mt-2">
-            <div className="px-3 py-2">
-              <p className="text-sm font-medium">{user.email}</p>
-            </div>
-            <DropdownMenuItem
-              onClick={() => {
-                console.log("Logout Clicked");
-              }}
-              className="cursor-pointer"
-            >
-              Logout
+            <DropdownMenuItem className="cursor-pointer">
+              <UserButton afterSignOutUrl="/" />
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

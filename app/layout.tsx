@@ -9,6 +9,10 @@ import { Toaster } from "@/components/ui/sonner";
 import Header from "@/components/Header";
 import { useState, createContext, useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import {
+  ClerkProvider,
+ 
+} from '@clerk/nextjs'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -68,6 +72,7 @@ export default function RootLayout({
   };
 
   return (
+    <ClerkProvider>
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -83,11 +88,6 @@ export default function RootLayout({
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               onSearch={handleSearch}
-              onLogin={handleLogin}
-              onLogout={handleLogout}
-              isLoggedIn={true} // You can make this dynamic based on auth state
-              userName="Ahmad Ali"
-              userEmail="ahmad@example.com"
               notificationCount={3}
             />
             {children}
@@ -96,5 +96,6 @@ export default function RootLayout({
         </ThemeProvider>
       </body>
     </html>
+    </ClerkProvider>
   );
 }
