@@ -1,45 +1,39 @@
-// components/Header.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Bell, 
-  Search, 
-  ShoppingCart,
-  Menu,
-  X
-} from "lucide-react";
-import ClerkHeader from './ClerkHeader';
+import { Bell, Search, ShoppingCart, Menu, X } from "lucide-react";
+import Link from 'next/link';
+import { getCartItemCount } from '@/lib/cartUtils';
+import ClerkHeader from "@/components/ClerkHeader";
 
-interface HeaderProps {
-  notificationCount?: number;
-  onSearch?: (query: string) => void;
-  searchQuery?: string;
-  setSearchQuery?: (query: string) => void;
-}
-
-export default function Header({
-  notificationCount = 3,
-  onSearch = (query) => console.log("Search:", query),
-  searchQuery = "",
-  setSearchQuery = () => {}
-}: HeaderProps) {
+export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [cartItemCount, setCartItemCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const updateCartCount = () => {
+      setCartItemCount(getCartItemCount());
+    };
+
+    updateCartCount();
+    window.addEventListener('cartUpdated', updateCartCount);
+    return () => window.removeEventListener('cartUpdated', updateCartCount);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(searchQuery);
+    console.log("Search:", searchQuery);
     if (showMobileSearch) setShowMobileSearch(false);
   };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
-        {/* Logo and Mobile Menu Button */}
         <div className="flex items-center gap-4">
           <Button 
             variant="ghost" 
@@ -50,15 +44,14 @@ export default function Header({
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </Button>
           
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">S</span>
             </div>
             <span className="font-bold text-xl hidden sm:block">Shop</span>
-          </div>
+          </Link>
         </div>
 
-        {/* Search Bar - Center (Desktop) */}
         <div className="hidden md:flex flex-1 max-w-md mx-6">
           <form onSubmit={handleSearch} className="relative w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -72,9 +65,7 @@ export default function Header({
           </form>
         </div>
 
-        {/* Right Section - Icons & User */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Mobile Search Button */}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -84,31 +75,30 @@ export default function Header({
             <Search size={20} />
           </Button>
 
-          {/* Desktop Icons */}
           <div className="hidden md:flex items-center gap-2">
             <Button variant="ghost" size="icon" className="relative">
               <Bell size={20} />
-              {notificationCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-                >
-                  {notificationCount > 9 ? '9+' : notificationCount}
-                </Badge>
-              )}
+              <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                3
+              </Badge>
             </Button>
             
-            <Button variant="ghost" size="icon">
-              <ShoppingCart size={20} />
-            </Button>
+            <Link href="/cart">
+              <Button variant="ghost" size="icon" className="relative">
+                <ShoppingCart size={20} />
+                {cartItemCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                    {cartItemCount > 9 ? '9+' : cartItemCount}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
           </div>
 
-          {/* User Auth */}
           <ClerkHeader />
         </div>
       </div>
 
-      {/* Mobile Search Bar */}
       {showMobileSearch && (
         <div className="md:hidden p-3 border-t">
           <form onSubmit={handleSearch} className="relative">
@@ -124,7 +114,6 @@ export default function Header({
         </div>
       )}
 
-      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-background border-t">
           <div className="px-4 py-3 space-y-3">
@@ -132,17 +121,21 @@ export default function Header({
               <Button variant="ghost" className="w-full justify-start gap-2">
                 <Bell size={18} />
                 Notifications
-                {notificationCount > 0 && (
-                  <Badge variant="destructive" className="ml-auto">
-                    {notificationCount}
-                  </Badge>
-                )}
+                <Badge variant="destructive" className="ml-auto">3</Badge>
               </Button>
               
-              <Button variant="ghost" className="w-full justify-start gap-2">
-                <ShoppingCart size={18} />
-                Cart
-              </Button>
+              <Link href="/cart" className="w-full">
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <ShoppingCart size={18} />
+                  Cart
+                  {cartItemCount > 0 && (
+                    <Badge variant="destructive" className="ml-auto">
+                      {cartItemCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+              <ClerkHeader />
             </div>
           </div>
         </div>

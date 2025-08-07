@@ -1,9 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  images:{
-    remotePatterns:[
+  images: {
+    domains: [
+      'res.cloudinary.com',
+      'via.placeholder.com',
+      'images.unsplash.com' // Add this
+    ],
+    remotePatterns: [
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
