@@ -6,10 +6,20 @@ import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { getCartItems, updateCartItemQuantity, removeFromCart, clearCart } from '@/lib/cartUtils';
-
+import { useUser } from '@clerk/nextjs';
 export default function CartPage() {
+  const { user } = useUser();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleCheckUser = () =>{
+    if (user) {
+      // Proceed to checkout logic here
+      alert("Proceeding to checkout");
+    } else {
+      alert("Please login to proceed to checkout");
+    }
+  }
 
   useEffect(() => {
     const loadCart = () => {
@@ -145,9 +155,13 @@ export default function CartPage() {
           <div className="sticky top-24">
             <div className="bg-gray-900 rounded-2xl shadow-md p-6 border border-gray-200">
               <h3 className="text-xl font-bold mb-4">Total: ₹{totalAmount.toLocaleString()}</h3>
-              <Button className="w-full bg-gray-500 hover:bg-gray-400 text-white py-4 text-lg rounded-xl font-semibold">
+             
+              <Button onClick={handleCheckUser} className="w-full bg-gray-500 hover:bg-gray-400 text-white py-4 text-lg rounded-xl font-semibold">
                 Proceed to Checkout
               </Button>
+              
+
+              
             </div>
           </div>
         </div>

@@ -8,7 +8,6 @@ import Loading from './(admin)/dashboard/loading';
 import { Heart, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSearch } from './layout'; // Import the search context
 import { useSearchParams } from 'next/navigation';
-import { useAuth } from '@clerk/nextjs';
 import { addToCart } from '@/lib/cartUtils';
 
 interface Product {
@@ -24,7 +23,7 @@ export default function Homepage() {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const { isSignedIn } = useAuth();
+
   
   // Use search context from layout
   const { searchQuery, setSearchQuery } = useSearch();
@@ -188,7 +187,7 @@ export default function Homepage() {
             <h2 className="text-3xl font-bold">Our Products</h2>
             {searchQuery && (
               <p className="text-sm text-gray-600">
-                Showing {filteredProducts.length} results for "{searchQuery}"
+                Showing {filteredProducts.length} results for {searchQuery}
               </p>
             )}
           </div>
@@ -203,43 +202,52 @@ export default function Homepage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
-                <div key={product.id} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden group h-full flex flex-col border border-gray-200">
-                  <div className="relative h-48">
-                    <Image
-                      width={300}
-                      height={300}
-                      src={product.imageUrl}
-                      alt={product.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300';
-                      }}
-                    />
-                    <button className="absolute top-4 right-4 p-2 bg-black bg-opacity-70 rounded-full shadow-md hover:bg-opacity-100 transition-colors">
-                      <Heart className="w-5 h-5 text-white" />
-                    </button>
-                  </div>
-                  
-                  <div className="p-4 flex-1 flex flex-col">
-                    <h3 className="font-semibold text-lg mb-2 line-clamp-2 min-h-[3.5rem]">{product.title}</h3>
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-3 flex-1">{product.description}</p>
-                    
-                    <div className="mt-auto">
-                      <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold text-gray-900">₹{product.price}</span>
-                        <button 
-                          onClick={() => handleAddToCart(product)}
-                          className="bg-black hover:bg-gray-800 text-white p-2 rounded-lg transition-colors"
-                        >
-                          <ShoppingCart className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+  {filteredProducts.map((product) => (
+    <div
+      key={product.id}
+      className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden group h-full flex flex-col border border-gray-200"
+    >
+      {/* Product Image + Wishlist Icon */}
+      <div className="relative h-48">
+        <Image
+          width={300}
+          height={300}
+          src={product.imageUrl}
+          alt={product.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300';
+          }}
+        />
+        <button className="absolute top-4 right-4 p-2 bg-black bg-opacity-70 rounded-full shadow-md hover:bg-opacity-100 transition-colors">
+          <Heart className="w-5 h-5 text-white" />
+        </button>
+      </div>
+
+      {/* Product Details */}
+      <div className="p-4 flex-1 flex flex-col">
+        <h3 className="font-semibold text-lg mb-2 min-h-[3rem] text-gray-900 group-hover:underline transition">
+          {product.title}
+        </h3>
+
+        <p className="text-gray-600 text-sm mb-3 flex-1 line-clamp-3">{product.description}</p>
+
+        {/* Price & Cart Button */}
+        <div className="mt-auto">
+          <div className="flex items-center justify-between">
+            <span className="text-2xl font-bold text-gray-900">₹{product.price}</span>
+            <button
+              onClick={() => handleAddToCart(product)}
+              className="bg-black hover:bg-gray-800 text-white p-2 rounded-lg transition-colors"
+            >
+              <ShoppingCart className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
           )}
         </div>
       </div>
